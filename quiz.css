@@ -1,0 +1,73 @@
+div.main {
+	margin-top: 5%;
+	margin-left: 10%;
+	width: 70%;
+}
+
+div.board {
+	margin-top: 25px;
+}
+
+.menu span {
+	margin-right: 5px;
+	padding: 2px;
+	color: Green;
+	text-decoration: none;
+}
+
+.menu span:hover {
+	border: 1px solid green;
+}
+
+.menu .active {
+	color: white;
+	background: green;
+}
+
+.row {
+	margin-top: 10px;
+}
+
+.panel {
+	margin-right: 5px;
+	padding: 4px;
+	font-family: monospace;
+	font-size: 14pt;
+}
+
+.board .isPicked {
+	color: white;
+	background: black;
+}
+
+.result .panel.isPicked.isWord {
+	color: white;
+	background: green;
+	border: none;
+}
+
+.result .panel.isPicked {
+	color: white;
+	background: red;
+	border: none;
+}
+
+.result .panel.isWord {
+	color: red;
+	border: 1px solid red;
+}
+
+.result .panel {
+	color: green;
+	border: 1px solid green;
+}
+
+.footer {
+	margin-top: 25px;
+	font-weight: bold;
+}
+
+.footer span {
+	margin-left: 5px;
+	margin-right: 5px;
+}
