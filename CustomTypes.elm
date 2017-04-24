@@ -1,4 +1,5 @@
 module CustomTypes exposing (..)
+import Array exposing (Array)
 
 type alias Tile = { word : String, isWord : Bool, isPicked : Bool }
 
@@ -29,5 +30,16 @@ type Msg =
     | MakeNewBoard
     | NewBoard Board
     | CheckScore
+    | Wordlist (Array String)
 
-
+quizName : QuizList -> String
+quizName q =
+  case q of
+    Twos -> "twos"
+    Threes -> "threes"
+    Q -> "q"
+    Qnou -> "q_no_u"
+    Jqxz -> "2_jqxz"
+    Cons -> "cons"
+    ConsY -> "cons_and_y"
+    JustVowels -> "just_vowels"

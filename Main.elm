@@ -1,8 +1,11 @@
+module Main exposing (..)
+
 import Html exposing (program)
 
 import CustomTypes exposing (..)
 import Update exposing (update, makeBoard)
 import View exposing (view)
+import Wordlists exposing (..)
 
 main = program 
         { init = init
@@ -11,11 +14,12 @@ main = program
         , subscriptions = subscriptions
         }
 
+
 -- SUBSCRIPTIONS stub
 subscriptions : Model -> Sub Msg
-subscriptions model = Sub.none
+subscriptions model = setWordlist Wordlist
 
 -- INIT with a Twos board
 init : (Model, Cmd Msg)
-init = (Model Twos Blank (0,0) False, makeBoard Twos)
+init = (Model Twos Blank (0,0) False, getWordlist "twos")
 

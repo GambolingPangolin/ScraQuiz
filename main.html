@@ -1,0 +1,18 @@
+<html>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Scrabble Quizzes</title>
+		<link rel="stylesheet" href="all.css"/>
+		<script src="wordlists.js"></script>
+		<script src="main.js"></script>
+	</head>
+	<body>
+	<script>
+var app = Elm.Main.fullscreen();
+app.ports.getWordlist.subscribe(function(name) {
+	app.ports.setWordlist.send(getWordlist(name));
+});
+	</script>
+	</body>
+</html>
+

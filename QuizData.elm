@@ -7,9 +7,19 @@ module QuizData exposing (
   , q_no_u
   , threes
   , twos
-  , consonants
-  , vowels 
   )
+
+wordlist : QuizList -> List String
+wordlist q =
+    case q of
+        Twos -> twos
+        Threes -> threes 
+        Cons -> only_cons
+        Qnou -> q_no_u
+        Q -> hasq
+        Jqxz -> jqxz
+        ConsY -> cons_and_y
+        JustVowels -> just_vowels
 
 jqxz = ["AZULEJO","BANJAX","BEZIQUE","BIJOUX","CAZIQUE"
         ,"EQUINOX","EXEQUY","JEEZ","JEEZE","JEEZELY","JEEZLY"
@@ -54,6 +64,3 @@ q_no_u = ["CINQ","CINQS","FAQIR","FAQIRS","KAMOTIQ","KAMOTIQS","MBAQANGA","MBAQA
 threes =  []
 
 twos = ["AA","AB","AD","AE","AG","AH","AI","AL","AM","AN","AR","AS","AT","AW","AX","AY","BA","BE","BI","BO","BY","DA","DE","DO","ED","EF","EH","EL","EM","EN","ER","ES","ET","EX","FA","FE","GI","GO","HA","HE","HI","HM","HO","ID","IF","IN","IS","IT","JO","KA","KI","LA","LI","LO","MA","ME","MI","MM","MO","MU","MY","NA","NE","NO","NU","OD","OE","OF","OH","OI","OM","ON","OP","OR","OS","OW","OX","OY","PA","PE","PI","PO","QI","RE","SH","SI","SO","TA","TE","TI","TO","UH","UM","UN","UP","US","UT","WE","WO","XI","XU","YA","YE","YO","ZA"]
-
-vowels = ['A','E','I','O','U']
-consonants = ['B','C','D','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Y','Z']

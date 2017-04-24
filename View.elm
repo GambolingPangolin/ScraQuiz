@@ -26,8 +26,7 @@ view model =
            
     in
     div [class "main"]
-      [ node "link" [ rel "stylesheet", href "all.css" ] [] 
-      , h1 [] [ text "Scrabble Quiz" ]
+      [ h1 [] [ text "Scrabble Quiz" ]
       , div scoreAtts [ text ("Current score: " ++ curScore ++ "%") ]
       , div [ class "menu" ] (renderMenu model.quiz)
       , div ([ class "board" ] ++ result) (renderBoard model.showScore model.board)
@@ -48,7 +47,7 @@ renderMenu ql =
             span [ makeClass x, onClick (ChangeQuiz x) ] [ text label ]
     in
     [ makeElement Twos "Twos"
-    --, makeElement Threes "Threes"
+    , makeElement Threes "Threes"
     , makeElement Qnou "Q (no U)"
     , makeElement Q "Q"
     , makeElement Jqxz "2 of JXQZ"

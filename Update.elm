@@ -1,6 +1,7 @@
 module Update exposing (update, makeBoard)
 
-import QuizData exposing (..)
+--import QuizData exposing (..)
+import Wordlists exposing (getWordlist)
 import CustomTypes exposing (..)
 import RandUtils exposing (..)
 
@@ -11,7 +12,7 @@ import List as L
 import List exposing (head, drop)
 
 import Array as A
-import Array exposing (fromList, get)
+import Array exposing (Array, fromList, get)
 
 -- UPDATE
 
@@ -19,9 +20,11 @@ update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
         ChangeQuiz x ->
-            ({ model | quiz = x, board = Blank, showScore = False}, makeBoard x)
+            ({ model | quiz = x, board = Blank, showScore = False}, getWordlist (quizName x)) 
+        Wordlist wl ->
+          (model, makeBoard model.quiz wl)
         MakeNewBoard ->
-            ( { model | board = Blank, showScore = False }, makeBoard model.quiz )
+            ( { model | board = Blank, showScore = False }, getWordlist (quizName model.quiz) )
         NewBoard x ->
             -- We might have generated a board with duplicates
             -- Check and rebuild if needed
@@ -38,13 +41,7 @@ update msg model =
             in
                if isOkay 
                   then ({model | board = x, showScore = False }, Cmd.none )
-                  else 
-                      (
-                      {model 
-                      | board = Blank
-                      , showScore = False}
-                      , makeBoard model.quiz
-                      )
+                  else (model, getWordlist (quizName model.quiz))
         CheckScore ->
             let
                 agger t sc = 
@@ -122,20 +119,19 @@ fuzz q w =
 
 -- Check words
 
-checkWord : QuizList -> String -> Bool
-checkWord q w = L.member w (wordlist q) 
+checkWord : String -> Array String -> Bool
+checkWord w wl = A.toList wl |> L.member w 
 
 -- Create a new board 
 
-makeBoard : QuizList -> Cmd Msg
-makeBoard q = 
+makeBoard : QuizList -> Array String -> Cmd Msg
+makeBoard q wl = 
     let
-        wl = fromList (wordlist q)
         n = A.length wl
         k = 18
         g = R.list k (float 0 1)
         makeTile : String -> Tile
-        makeTile w = { word = w, isWord = checkWord q w, isPicked = False }
+        makeTile w = { word = w, isWord = checkWord w wl, isPicked = False }
         getter : Int -> List String
         getter i =
           case get i wl of
@@ -152,14 +148,6 @@ makeBoard q =
     in
     generate (Board >> NewBoard) boardGen 
 
-wordlist : QuizList -> List String
-wordlist q =
-    case q of
-        Twos -> twos
-        Threes -> threes 
-        Cons -> only_cons
-        Qnou -> q_no_u
-        Q -> hasq
-        Jqxz -> jqxz
-        ConsY -> cons_and_y
-        JustVowels -> just_vowels
+
+vowels = ['A','E','I','O','U']
+consonants = ['B','C','D','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Y','Z']
