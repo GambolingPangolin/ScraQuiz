@@ -4,6 +4,7 @@ import Html.Events exposing (onClick)
 import Array exposing (..)
 import Random exposing (int)
 import QuizData exposing (..)
+import Debug exposing (log)
 
 main = Html.program 
         { init = init
@@ -55,7 +56,7 @@ delItem i xs =
 -- the input array with the same number of elements
 filterSubset : Array a -> List Float -> List a
 filterSubset xs fs = 
-    case (fs, log "lxs" <| Array.length <| log "xs" xs) of
+    case (fs, Array.length <| log "xs" xs) of
         (_,0) -> []
         (f :: gs, k) ->
             let
