@@ -1,9 +1,11 @@
 module RandUtils exposing (
     randSubset
+    , generatorUnit
     , combine
     )
 import Html exposing (text)
 import Random exposing (..)
+import List as L
 
 shiftInsert : Int -> List Int -> List Int
 shiftInsert x ys =
@@ -13,7 +15,7 @@ shiftInsert x ys =
            then y + 1
            else y
   in
-  x :: List.map f ys
+  x :: L.map f ys
 
 -- Given a list of k Floats (presumably sampled uniformly at random from
 -- [0,1)), produce a duplicate-free list of random elements of {0,...,n-1}
@@ -31,13 +33,13 @@ randSubset n fs =
 
 -- For some reason the unit to the Random.Generator monad is not implemented.  
 -- This is a workaround
-unit : a -> Random.Generator a
-unit x = Random.map (always x) (Random.int 0 0)
+generatorUnit : a -> Generator a
+generatorUnit = always >> flip map bool
 
 -- Combine a List of Random.Generator values into a Random.Generator with List value
-combine : List (Random.Generator a) -> Random.Generator (List a)
+combine : List (Generator a) -> Generator (List a)
 combine xs = 
-    List.foldl (Random.map2 (::)) (unit []) (List.reverse xs)
+    L.foldl (Random.map2 (::)) (generatorUnit []) (L.reverse xs)
 
 
 main = randSubset 20 [0.5,0.2,0.1,0.4,0.5,0.8,0.1,0.9,0.61,0.05,0.33] |> toString >> text

@@ -13,6 +13,8 @@ import List exposing (head, drop)
 import Array as A
 import Array exposing (Array, fromList, get)
 
+import Maybe as M
+
 -- UPDATE
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -25,22 +27,7 @@ update msg model =
         MakeNewBoard ->
             ( { model | board = Blank, showScore = False }, makeBoard model.quiz model.wordlist )
         NewBoard x ->
-            -- We might have generated a board with duplicates
-            -- Check and rebuild if needed
-            let
-                noDup ws =
-                    case ws of
-                        [] -> True
-                        w :: rest ->
-                            not (L.member w rest) && noDup rest
-                isOkay = 
-                    case x of
-                        Blank -> True
-                        Board ts -> noDup (L.map (\t -> t.word) ts)
-            in
-               if isOkay 
-                  then ({model | board = x, showScore = False }, Cmd.none )
-                  else (model, getWordlist (quizName model.quiz))
+            ({model | board = x, showScore = False }, Cmd.none)
         CheckScore ->
             let
                 agger t sc = 
@@ -71,86 +58,86 @@ update msg model =
 
 -- HELPER FUNCTIONS
 
--- Fuzz words
--- Randomly modify letters in a word, taking care to produce a word of the same type
+sample : Array String -> Generator String 
+sample xs =
+    let
+        l = A.length xs
+        g = R.int 0 (l-1) 
+    in
+       R.map (
+           flip get xs >>
+           M.withDefault "*" 
+           ) g
+           
 
-fuzz : QuizList -> String -> Generator String
-fuzz q w =
-  let
-      l = String.length w
-      -- Probability of replacing one or more letters should be about p2 
-      -- ( 1 - (1-p)^l) = p2 
-      p2 = 0.5
-      p = 1 - e ^ ( (1 / toFloat l) * logBase e ( 1 - p2 ))
-      g = R.list l (float 0 1)
-
-      fuzzChar noReplace f c = 
-          let
-              f2 = floor (f * toFloat 511)
-              newCons = choose <| head (drop (f2 % 21) consonants)
-              newVow  = choose <| head (drop (f2 % 5) vowels)
-              choose x = case x of
-                  Just t -> t
-                  Nothing -> '*'
-              newChar = if L.member c consonants then newCons else newVow
-          in
-          if f < p && not (L.member c noReplace) then newChar else c
-
-      simpleFuzz noReplace w = 
-          let
-              fuzzer fs = 
-                  L.map2 (fuzzChar noReplace) fs (String.toList w) |> String.fromList
-
-          in
-          R.map fuzzer g 
-
-      fuzzed = simpleFuzz [] w
-  in
-  case q of
-    -- It is possible for a non-Y to be replaced by a Y
-    Cons       -> fuzzed
-    ConsY      -> fuzzed
-    JustVowels -> fuzzed
-    Twos       -> fuzzed
-    Threes     -> fuzzed
-    Q          -> simpleFuzz ['Q'] w
-    -- It is possible for a different vowel to be replaced by a U
-    Qnou       -> simpleFuzz ['Q'] w 
-    Jqxz       -> simpleFuzz ['J','Q','X','Z'] w
-
--- Check words
-
-checkWord : String -> Array String -> Bool
-checkWord w wl = A.toList wl |> L.member w 
-
--- Create a new board 
+checkWord : Array String -> String -> Bool
+checkWord wl w = A.toList wl |> L.member w 
 
 makeBoard : QuizList -> Array String -> Cmd Msg
-makeBoard q wl = 
+makeBoard q wl = [] |> extendBoard q wl >> R.map Board >> generate NewBoard
+
+extendBoard : QuizList -> Array String -> List String -> Generator (List Tile)
+extendBoard q wl ws =
     let
-        n = A.length wl
-        k = 18
-        g = R.list k (float 0 1)
         makeTile : String -> Tile
-        makeTile w = { word = w, isWord = checkWord w wl, isPicked = False }
-        getter : Int -> List String
-        getter i =
-          case get i wl of
-            Just w  -> [w]
-            Nothing -> []
-        boardGenerator = 
-            g |> 
-            andThen (
-                randSubset n >>
-                L.concatMap getter >>
-                L.map (fuzz q >> R.map makeTile) >>
-                combine >>
-                R.map Board
-            ) 
-
+        makeTile w = {word = w, isWord = checkWord wl w, isPicked = False}
+        n = min 18 (A.length wl)
     in
-    generate NewBoard boardGenerator 
+    if L.length ws >= n
+       then L.map makeTile ws |> generatorUnit
+       else 
+           sample wl 
+           |> andThen (fuzz q wl)
+           |> R.map (
+               L.singleton >> 
+               L.filter (flip L.member ws >> not) 
+               >> (++) ws
+               )
+           |> andThen (extendBoard q wl)
 
+fuzz : QuizList -> Array String -> String -> Generator String
+fuzz q wl w =
+    case q of
+        Twos       -> fuzz1 [] [] w
+        Threes     -> fuzz1 [] [] w
+        Q          -> fuzz1 ['Q'] [] w
+        Qnou       -> fuzz1 [] ['U'] w
+        Cons       -> fuzz1 [] ['Y'] w
+        ConsY      -> fuzz1 [] [] w
+        Jqxz       -> fuzz1 ['J','X','Q','Z'] [] w
+        JustVowels -> fuzz1 [] [] w
+
+fuzz1 : List Char -> List Char -> String -> Generator String
+fuzz1 noReplace noAdd w =
+    let
+        l = String.length w
+        g = R.list l (R.float 0 1)
+        p = 0.65 
+        q = 1 - e ^ ( (1 / toFloat l) * logBase e (1 - p) )
+        replacer : Char -> Float -> Char
+        replacer c x =
+            let
+                newVow = 
+                    vowels
+                    |> L.filter (flip L.member noAdd >> not)
+                    |> drop ((floor x * 511) % 5) 
+                    |> head 
+                    |> M.withDefault '*'  
+                newCons =
+                    consonants
+                    |> L.filter (flip L.member noAdd >> not)
+                    |> drop ((floor x * 511) % 21) 
+                    |> head
+                    |> M.withDefault '*'
+                newChar = if L.member c vowels then newVow else newCons
+            in
+            if x >= q || L.member c noReplace
+               then c
+               else newChar
+    in
+       R.map (
+           (w |> String.toList |> L.map replacer |> L.map2 (<|)) >> String.fromList
+           ) g
 
 vowels = ['A','E','I','O','U']
 consonants = ['B','C','D','F','G','H','J','K','L','M','N','P','Q','R','S','T','V','W','X','Y','Z']
