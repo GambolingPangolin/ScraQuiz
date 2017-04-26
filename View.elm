@@ -15,28 +15,37 @@ import Dict as D
 view : Model -> Html Msg
 view model =
     let
-        boardAtts = 
-            class "board" :: if model.showScore
-               then [class "result"]
-               else []
         (s,t) = model.score
-        curScore = 100 * toFloat s / toFloat t |> floor |> toString 
-        scoreMessage = "Current score: " ++ curScore ++ "%"
+        curScore = 100 * toFloat s / toFloat t |> floor 
+        bgcolor = case (curScore < 33, curScore < 66) of
+            (True,_)     -> class "bad"
+            (False,True) -> class "okay"
+            _            -> class "good"
+        scoreMessage = curScore |> toString |> (++) "%"
         scoreboard =
             if t > 0
-               then div [class "score"] [text scoreMessage]
-               else text "" 
+               then div [class "score", bgcolor] [text scoreMessage]
+               else div [class "score"] []
            
     in
     div [class "main"]
-      [ h1 [] [ text "Scrabble Quiz" ]
-      , scoreboard
-      , div [ class "menu" ] (renderMenu model.quiz)
-      , div boardAtts (renderBoard model.showScore model.board)
-      , div [ class "footer"] [
-          span [onClick MakeNewBoard] [text "New Quiz"]
-          , text "|"
-          , span [onClick CheckScore] [text "Check"] ]
+      [
+      div [ class "banner" ] [ text "Scrabble quizzes" ]
+      , div [ class "left" ]
+          [
+          scoreboard
+          , div [ class "menu" ] (renderMenu model.quiz)
+          ]
+      , div [ class "right" ]
+        [
+        renderBoard model.showScore model.board
+        , div [ class "controls"] [
+            if not model.showScore
+               then span [onClick CheckScore] [text "Check Score"] 
+               else text ""
+            , span [onClick MakeNewBoard] [text "New Quiz"]
+            ]
+        ]
       ]
     
 renderMenu : QuizList -> List (Html Msg)
@@ -56,11 +65,10 @@ renderMenu ql =
     , makeElement Jqxz "2 of JXQZ"
     , makeElement Cons "Consonants"
     , makeElement ConsY "Consonants (and Y)"
-    , makeElement JustVowels "Just vowels"
     ]
     
 
-renderBoard : Bool -> Board -> List (Html Msg)
+renderBoard : Bool -> Board -> Html Msg
 renderBoard ss b = 
     let
         nRows = 6
@@ -82,9 +90,11 @@ renderBoard ss b =
                then (take n xs) :: chop n (drop n xs)
                else [xs]
         viewRow cs = div [class "row"] <| L.map viewTile cs
-    in
-    case b of
-        Blank -> []
-        Board ts ->
-            L.map viewRow (chop nRows ts) 
+        result = if ss then class "result" else class "playing"
+        theBoard = case b of
+            Blank -> []
+            Board ts ->
+                L.map viewRow (chop nRows ts) 
 
+    in
+    div [class "board", result] theBoard 
