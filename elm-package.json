@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "A simple quiz over important Scrabble words",
-    "repository": "https://github.com/user/project.git",
+    "repository": "https://github.com/GambolingPangolin/ScraQuiz.git",
     "license": "BSD3",
     "source-directories": [
         "."
