@@ -19,13 +19,14 @@ type QuizList =
 
 type alias Model = { 
     quiz : QuizList
+    , wordlist: Array String
     , board : Board
     , score: (Int, Int) 
     , showScore : Bool
     }
 
 type Msg =
-    ChangeQuiz QuizList
+    ChangeList QuizList
     | ToggleTile String
     | MakeNewBoard
     | NewBoard Board

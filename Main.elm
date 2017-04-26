@@ -7,6 +7,8 @@ import Update exposing (update, makeBoard)
 import View exposing (view)
 import Wordlists exposing (..)
 
+import Array exposing (empty)
+
 main = program 
         { init = init
         , view = view
@@ -21,5 +23,5 @@ subscriptions model = setWordlist Wordlist
 
 -- INIT with a Twos board
 init : (Model, Cmd Msg)
-init = (Model Twos Blank (0,0) False, getWordlist "twos")
+init = ({quiz=Twos, wordlist=empty, board=Blank, score=(0,0), showScore=False}, getWordlist "twos")
 

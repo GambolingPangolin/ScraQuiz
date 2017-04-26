@@ -23,17 +23,17 @@ div.score {
 .menu span {
 	margin-right: 5px;
 	padding: 2px;
-	color: Green;
+	color: Navy;
 	text-decoration: none;
 }
 
 .menu span:hover {
-	border: 1px solid green;
+	border: 1px solid Navy;
 }
 
 .menu .active {
 	color: white;
-	background: green;
+	background: Navy;
 }
 
 .row {

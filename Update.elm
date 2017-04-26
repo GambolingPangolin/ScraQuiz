@@ -1,6 +1,5 @@
 module Update exposing (update, makeBoard)
 
---import QuizData exposing (..)
 import Wordlists exposing (getWordlist)
 import CustomTypes exposing (..)
 import RandUtils exposing (..)
@@ -19,12 +18,12 @@ import Array exposing (Array, fromList, get)
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        ChangeQuiz x ->
+        ChangeList x ->
             ({ model | quiz = x, board = Blank, showScore = False}, getWordlist (quizName x)) 
         Wordlist wl ->
-          (model, makeBoard model.quiz wl)
+          ({model|wordlist = wl}, makeBoard model.quiz wl)
         MakeNewBoard ->
-            ( { model | board = Blank, showScore = False }, getWordlist (quizName model.quiz) )
+            ( { model | board = Blank, showScore = False }, makeBoard model.quiz model.wordlist )
         NewBoard x ->
             -- We might have generated a board with duplicates
             -- Check and rebuild if needed
@@ -79,15 +78,15 @@ fuzz : QuizList -> String -> Generator String
 fuzz q w =
   let
       l = String.length w
-      -- Probability of replacing a letter should be about q 
+      -- Probability of replacing one or more letters should be about p2 
       -- ( 1 - (1-p)^l) = p2 
       p2 = 0.5
       p = 1 - e ^ ( (1 / toFloat l) * logBase e ( 1 - p2 ))
       g = R.list l (float 0 1)
 
-      fuzzChar exs f c = 
+      fuzzChar noReplace f c = 
           let
-              f2 = floor (f * toFloat 51)
+              f2 = floor (f * toFloat 511)
               newCons = choose <| head (drop (f2 % 21) consonants)
               newVow  = choose <| head (drop (f2 % 5) vowels)
               choose x = case x of
@@ -95,26 +94,28 @@ fuzz q w =
                   Nothing -> '*'
               newChar = if L.member c consonants then newCons else newVow
           in
-          if f < p && not (L.member c exs) then newChar else c
+          if f < p && not (L.member c noReplace) then newChar else c
 
-      simpleFuzz excs w = 
+      simpleFuzz noReplace w = 
           let
               fuzzer fs = 
-                  L.map2 (fuzzChar excs) fs (String.toList w) |> String.fromList
+                  L.map2 (fuzzChar noReplace) fs (String.toList w) |> String.fromList
 
           in
           R.map fuzzer g 
+
+      fuzzed = simpleFuzz [] w
   in
   case q of
-    -- It is possible for a non-Y to be replace by a Y
-    Cons       -> simpleFuzz [] w
-    ConsY      -> simpleFuzz [] w
-    JustVowels -> simpleFuzz [] w
-    Twos       -> simpleFuzz [] w
-    Threes     -> simpleFuzz [] w
+    -- It is possible for a non-Y to be replaced by a Y
+    Cons       -> fuzzed
+    ConsY      -> fuzzed
+    JustVowels -> fuzzed
+    Twos       -> fuzzed
+    Threes     -> fuzzed
     Q          -> simpleFuzz ['Q'] w
     -- It is possible for a different vowel to be replaced by a U
-    Qnou       -> simpleFuzz [] w 
+    Qnou       -> simpleFuzz ['Q'] w 
     Jqxz       -> simpleFuzz ['J','Q','X','Z'] w
 
 -- Check words
@@ -137,16 +138,18 @@ makeBoard q wl =
           case get i wl of
             Just w  -> [w]
             Nothing -> []
-        drawWords : List Float -> List String
-        drawWords = 
-          randSubset n >> 
-          L.concatMap getter 
-        boardGen = 
+        boardGenerator = 
             g |> 
-            andThen (drawWords >> L.map (fuzz q >> R.map makeTile) >> combine) 
+            andThen (
+                randSubset n >>
+                L.concatMap getter >>
+                L.map (fuzz q >> R.map makeTile) >>
+                combine >>
+                R.map Board
+            ) 
 
     in
-    generate (Board >> NewBoard) boardGen 
+    generate NewBoard boardGenerator 
 
 
 vowels = ['A','E','I','O','U']

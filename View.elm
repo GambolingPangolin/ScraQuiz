@@ -13,23 +13,24 @@ import List exposing (take, drop)
 view : Model -> Html Msg
 view model =
     let
-        result = 
-            if model.showScore
+        boardAtts = 
+            class "board" :: if model.showScore
                then [class "result"]
                else []
         (s,t) = model.score
         curScore = 100 * toFloat s / toFloat t |> floor |> toString 
-        scoreAtts = 
-            if t > 0 
-               then [class "score"]
-               else [class "score", class "off"]
+        scoreMessage = "Current score: " ++ curScore ++ "%"
+        scoreboard =
+            if t > 0
+               then div [class "score"] [text scoreMessage]
+               else text "" 
            
     in
     div [class "main"]
       [ h1 [] [ text "Scrabble Quiz" ]
-      , div scoreAtts [ text ("Current score: " ++ curScore ++ "%") ]
+      , scoreboard
       , div [ class "menu" ] (renderMenu model.quiz)
-      , div ([ class "board" ] ++ result) (renderBoard model.showScore model.board)
+      , div boardAtts (renderBoard model.showScore model.board)
       , div [ class "footer"] [
           span [onClick MakeNewBoard] [text "New Quiz"]
           , text "|"
@@ -44,7 +45,7 @@ renderMenu ql =
                then class "active"
                else class "inactive"
         makeElement x label =
-            span [ makeClass x, onClick (ChangeQuiz x) ] [ text label ]
+            span [ makeClass x, onClick (ChangeList x) ] [ text label ]
     in
     [ makeElement Twos "Twos"
     , makeElement Threes "Threes"
