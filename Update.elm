@@ -1,4 +1,4 @@
-module Update exposing (update, makeBoard)
+module Update exposing (update)
 
 import Wordlists exposing (getWordlist)
 import CustomTypes exposing (..)
@@ -15,6 +15,11 @@ import Array exposing (Array, fromList, get)
 
 import Maybe as M
 
+import Dict exposing (Dict)
+import Dict as D
+
+import Tuple exposing (first, second)
+
 -- UPDATE
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -23,26 +28,39 @@ update msg model =
         ChangeList x ->
             ({ model | quiz = x, board = Blank, showScore = False}, getWordlist (quizName x)) 
         Wordlist wl ->
-          ({model|wordlist = wl}, makeBoard model.quiz wl)
+            let
+                newModel = {model| wordlist = wl}
+            in
+            ( newModel, makeBoard newModel)
         MakeNewBoard ->
-            ( { model | board = Blank, showScore = False }, makeBoard model.quiz model.wordlist )
+            ( { model | board = Blank, showScore = False }, makeBoard model )
         NewBoard x ->
             ({model | board = x, showScore = False }, Cmd.none)
         CheckScore ->
             let
-                agger t sc = 
-                    let
-                        (u,v) = sc
-                    in
-                       if t.isWord == t.isPicked then (u+1,v+1) else (u,v+1)
                 (oldScore, oldTotal) = model.score
                 (thisScore, thisTotal) = 
                     case model.board of
                         Blank -> (0,0)
-                        Board ts -> L.foldl agger (0,0) ts
-
+                        Board ts -> 
+                          (ts |> L.filter (\ t -> t.isWord == t.isPicked) |> L.length, L.length ts)
+                newLog = 
+                  case model.board of
+                    Blank -> model.log
+                    Board ts ->
+                      let 
+                          unseen = L.filter (\ t -> D.member t.word model.log |> not) ts
+                          inserted = L.foldl (\ t -> D.insert t.word 0) model.log unseen
+                      in 
+                      L.foldl (
+                        \ t -> 
+                          D.update t.word (M.map (\ s -> if t.isWord == t.isPicked then s+1 else s-1))
+                        ) inserted ts
             in  
-            ({ model | showScore = True, score = (thisScore+oldScore, thisTotal+oldTotal) }, Cmd.none)
+            ({model | showScore = True
+                      , score = (thisScore+oldScore, thisTotal+oldTotal) 
+                      , log = newLog
+            }, Cmd.none)
         ToggleTile x ->
             let
                 subst : Tile -> Tile
@@ -69,31 +87,38 @@ sample xs =
            M.withDefault "*" 
            ) g
            
+adjust : Dict String Int -> Array String -> Array String
+adjust d ws = 
+  D.toList d
+  |> L.filter (first >> flip L.member (A.toList ws))
+  |> L.concatMap (\ (w,s) -> L.repeat (max 0 (negate s)) w)
+  |> A.fromList
+  |> A.append ws
 
 checkWord : Array String -> String -> Bool
 checkWord wl w = A.toList wl |> L.member w 
 
-makeBoard : QuizList -> Array String -> Cmd Msg
-makeBoard q wl = [] |> extendBoard q wl >> R.map Board >> generate NewBoard
+makeBoard : Model -> Cmd Msg
+makeBoard model = [] |> extendBoard model >> R.map Board >> generate NewBoard
 
-extendBoard : QuizList -> Array String -> List String -> Generator (List Tile)
-extendBoard q wl ws =
+extendBoard : Model -> List String -> Generator (List Tile)
+extendBoard model ws =
     let
         makeTile : String -> Tile
-        makeTile w = {word = w, isWord = checkWord wl w, isPicked = False}
-        n = min 18 (A.length wl)
+        makeTile w = {word = w, isWord = checkWord model.wordlist w, isPicked = False}
+        n = min 18 (A.length model.wordlist)
     in
     if L.length ws >= n
        then L.map makeTile ws |> generatorUnit
        else 
-           sample wl 
-           |> andThen (fuzz q wl)
+           sample (adjust model.log model.wordlist) 
+           |> andThen (fuzz model.quiz model.wordlist)
            |> R.map (
                L.singleton >> 
                L.filter (flip L.member ws >> not) 
                >> (++) ws
                )
-           |> andThen (extendBoard q wl)
+           |> andThen (extendBoard model)
 
 fuzz : QuizList -> Array String -> String -> Generator String
 fuzz q wl w =
@@ -101,7 +126,7 @@ fuzz q wl w =
         Twos       -> fuzz1 [] [] w
         Threes     -> fuzz1 [] [] w
         Q          -> fuzz1 ['Q'] [] w
-        Qnou       -> fuzz1 [] ['U'] w
+        Qnou       -> fuzz1 ['Q'] ['U'] w
         Cons       -> fuzz1 [] ['Y'] w
         ConsY      -> fuzz1 [] [] w
         Jqxz       -> fuzz1 ['J','X','Q','Z'] [] w
@@ -117,16 +142,16 @@ fuzz1 noReplace noAdd w =
         replacer : Char -> Float -> Char
         replacer c x =
             let
+                vows2 = L.filter (flip L.member noAdd >> not) vowels
+                cons2 = L.filter (flip L.member noAdd >> not) consonants
                 newVow = 
-                    vowels
-                    |> L.filter (flip L.member noAdd >> not)
-                    |> drop ((floor x * 511) % 5) 
+                    vows2
+                    |> drop (floor (x * 511) % (L.length vows2)) 
                     |> head 
                     |> M.withDefault '*'  
                 newCons =
-                    consonants
-                    |> L.filter (flip L.member noAdd >> not)
-                    |> drop ((floor x * 511) % 21) 
+                    cons2
+                    |> drop (floor (x * 511) % (L.length cons2)) 
                     |> head
                     |> M.withDefault '*'
                 newChar = if L.member c vowels then newVow else newCons

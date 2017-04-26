@@ -1,5 +1,6 @@
 module CustomTypes exposing (..)
 import Array exposing (Array)
+import Dict exposing (Dict)
 
 type alias Tile = { word : String, isWord : Bool, isPicked : Bool }
 
@@ -21,6 +22,9 @@ type alias Model = {
     quiz : QuizList
     , wordlist: Array String
     , board : Board
+    -- key: word
+    -- value: wordscore = nCorrect - nIncorrect 
+    , log : Dict String Int 
     , score: (Int, Int) 
     , showScore : Bool
     }

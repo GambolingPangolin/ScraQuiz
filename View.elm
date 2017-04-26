@@ -9,6 +9,8 @@ import Html.Events exposing (onClick)
 import List as L
 import List exposing (take, drop)
 
+import Dict as D
+
 -- VIEW
 view : Model -> Html Msg
 view model =
