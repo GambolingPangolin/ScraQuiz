@@ -3,7 +3,6 @@ module RandUtils exposing (
     , generatorUnit
     , combine
     )
-import Html exposing (text)
 import Random exposing (..)
 import List as L
 
@@ -26,10 +25,7 @@ randSubset n fs =
      else case fs of
        [] -> []
        f :: gs -> 
-         let
-             x1 = floor (f * toFloat n)
-         in
-            randSubset (n-1) gs |> shiftInsert x1
+         randSubset (n-1) gs |> shiftInsert (floor (f * toFloat n))
 
 -- For some reason the unit to the Random.Generator monad is not implemented.  
 -- This is a workaround
@@ -40,7 +36,3 @@ generatorUnit = always >> flip map bool
 combine : List (Generator a) -> Generator (List a)
 combine xs = 
     L.foldl (Random.map2 (::)) (generatorUnit []) (L.reverse xs)
-
-
-main = randSubset 20 [0.5,0.2,0.1,0.4,0.5,0.8,0.1,0.9,0.61,0.05,0.33] |> toString >> text
-
