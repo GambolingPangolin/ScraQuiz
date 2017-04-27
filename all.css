@@ -4,6 +4,10 @@ div.main {
 	font-family: sans;
 }
 
+div.main.intro {
+	width: 80%;
+}
+
 div.banner {
 	font-size: 32pt;
 	font-weight: bold;

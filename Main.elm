@@ -2,7 +2,7 @@ module Main exposing (..)
 
 import Html exposing (program)
 
-import CustomTypes exposing (..)
+import Types exposing (..)
 import Update exposing (update)
 import View exposing (view)
 import Wordlists exposing (..)
@@ -24,15 +24,4 @@ subscriptions model = setWordlist Wordlist
 
 -- INIT with a Twos board
 init : (Model, Cmd Msg)
-init = (
-    {
-    quiz=Twos
-    , wordlist=empty
-    , board=Blank
-    , log = D.empty
-    , score=(0,0)
-    , showScore=False
-    }
-    , getWordlist "twos"
-    )
-
+init = (Intro, Cmd.none)

@@ -1,4 +1,4 @@
-module CustomTypes exposing (..)
+module Types exposing (..)
 import Array exposing (Array)
 import Dict exposing (Dict)
 
@@ -18,7 +18,11 @@ type QuizList =
     | ConsY
     | JustVowels
 
-type alias Model = { 
+type Model =
+    Intro
+    | Model ModelData
+
+type alias ModelData = { 
     quiz : QuizList
     , wordlist: Array String
     , board : Board
@@ -30,7 +34,8 @@ type alias Model = {
     }
 
 type Msg =
-    ChangeList QuizList
+    LeaveIntro
+    | ChangeList QuizList
     | ToggleTile String
     | MakeNewBoard
     | NewBoard Board

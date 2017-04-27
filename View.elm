@@ -1,6 +1,6 @@
 module View exposing (view)
 
-import CustomTypes exposing (..)
+import Types exposing (..)
 
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -14,6 +14,29 @@ import Dict as D
 -- VIEW
 view : Model -> Html Msg
 view model =
+    case model of
+        Intro -> intro
+        Model x -> viewMain x
+
+intro = div [class "main intro"] [
+    div [class "banner"] [text "Scrabble quizzes"]
+    , p [] [text "Welcome to my Scrabble quiz app!  Use the left menu to pick a wordlist.  Click on the valid Scrabble words in the grid on the right.  Click 'Check' to check your responses.  Your results will display according to the legend:"]
+    , div [class "board result"] [
+        div [class "row"] [
+            span [class "panel isWord isPicked"] [text "You picked this word correctly"]
+            , span [class "panel isPicked"] [text "You picked this word incorrectly"]
+            ]
+        , div [class "row"] [
+            span [class "panel isWord"] [text "You should have picked this word"]
+            , span [class "panel"] [text "You correctly didn't pick this word"]
+            ]
+        ]
+    , div [class "controls"] [ span [ onClick LeaveIntro] [text "OK"] ]
+    ]
+
+
+viewMain : ModelData -> Html Msg
+viewMain model =
     let
         (s,t) = model.score
         curScore = 100 * toFloat s / toFloat t |> floor 

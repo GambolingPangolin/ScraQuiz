@@ -1,7 +1,7 @@
 module Update exposing (update)
 
 import Wordlists exposing (getWordlist)
-import CustomTypes exposing (..)
+import Types exposing (..)
 import RandUtils exposing (..)
 
 import Random as R
@@ -18,12 +18,29 @@ import Maybe as M
 import Dict exposing (Dict)
 import Dict as D
 
-import Tuple exposing (first, second)
+import Tuple exposing (first, second, mapFirst)
 
 -- UPDATE
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
+    case model of
+        Intro ->
+            case msg of
+                LeaveIntro ->
+                    (Model {
+                        quiz = Twos
+                        , wordlist = A.empty
+                        , board = Blank
+                        , log = D.empty
+                        , score = (0,0)
+                        , showScore = False
+                        }, getWordlist "twos")
+                _ -> (model, Cmd.none)
+        Model x -> updateModel msg x |> mapFirst Model
+
+updateModel : Msg -> ModelData -> (ModelData, Cmd Msg)
+updateModel msg model =
     case msg of
         ChangeList x ->
             ({ model | quiz = x, board = Blank, showScore = False}, getWordlist (quizName x)) 
@@ -73,6 +90,7 @@ update msg model =
                     Blank -> Blank
             in
             ( { model | board = toggledBoard }, Cmd.none )
+        _ -> (model, Cmd.none)
 
 -- HELPER FUNCTIONS
 
@@ -98,10 +116,10 @@ adjust d ws =
 checkWord : Array String -> String -> Bool
 checkWord wl w = A.toList wl |> L.member w 
 
-makeBoard : Model -> Cmd Msg
+makeBoard : ModelData -> Cmd Msg
 makeBoard model = [] |> extendBoard model >> R.map Board >> generate NewBoard
 
-extendBoard : Model -> List String -> Generator (List Tile)
+extendBoard : ModelData -> List String -> Generator (List Tile)
 extendBoard model ws =
     let
         makeTile : String -> Tile
